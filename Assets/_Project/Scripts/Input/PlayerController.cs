@@ -93,7 +93,6 @@ namespace Psychonaut
             rb.freezeRotation = true;
             SetupTimers();
             SetupStateMachine();
-            SetRagdollParts();
 
             mainCamera = Camera.main;
 
@@ -160,14 +159,12 @@ namespace Psychonaut
         {
             input.Jump += OnJump;
             input.Interact += OnInteract;
-            input.Interact2 += OnInteract2;
         }
 
         void OnDisable()
         {
             input.Jump -= OnJump;
             input.Interact -= OnInteract;
-            input.Interact2 -= OnInteract2;
         }
 
         void Start() => input.EnablePlayerActions();
@@ -190,7 +187,6 @@ namespace Psychonaut
             HandleCameraYMovement();
             UpdateAnimator();
             HandleMovement();
-            HandleInteractRaycast();
 
         }
 
@@ -311,177 +307,6 @@ namespace Psychonaut
             if (isInteracting && interactor.interactable != null)
             {
                 interactor.Interact();
-            }
-        }
-
-        void OnInteract2(bool performed)
-        {
-            if (performed)
-            {
-                isInteracting = !isInteracting;
-
-                if (isInteracting)
-                {
-                    HandleInteract2();
-                }
-            }
-        }
-
-        public void HandleInteract2()
-        {
-            if (isInteracting && interactor.interactable != null)
-            {
-                interactor.Interact2();
-            }
-        }
-
-        private void HandleInteractRaycast()
-        {
-            Ray ray = new Ray(mainCam.transform.position, mainCam.transform.forward);
-            RaycastHit hit;
-
-
-            interactItemInteractable = null;
-            Debug.Log("PlayerController_HandleInteractRaycast test1");
-            if (Physics.Raycast(ray, out hit, interactRange))
-            {
-                Debug.Log("PlayerController_HandleInteractRaycast test2");
-
-                interactItemProperty = hit.collider.GetComponent<IItemProperty>();
-                interactItemInteractable = hit.collider.GetComponent<IInteractable>();
-
-                if (interactItemProperty == null) return;
-
-                interactItem = hit.collider.GetComponent<BaseItem>();
-                if (hit.collider.GetComponent<Rigidbody>() != null) { interactItemRB = hit.collider.GetComponent<Rigidbody>(); } else { interactItemRB = null; }
-                if (hit.collider.GetComponent<BoxCollider>() != null) { interactItemCollider = hit.collider.GetComponent<BoxCollider>(); } else { interactItemCollider = null; }
-
-                Debug.Log("PlayerController_HandleInteractRaycast raycasted: " + interactItemProperty.Name);
-
-                if (interactItemProperty.IsInteractable && interactItemInteractable != null)
-                {
-                    interactor.interactable = interactItemInteractable;
-
-                    if (interactItemProperty.IsPickupable)
-                    {
-                        PickupItem();
-                    }
-                }
-                else
-                {
-                    interactor.interactable = null;
-                }
-            }
-            else
-            {
-                interactor.interactable = null;
-            }
-            Debug.DrawRay(ray.origin, ray.direction * interactRange, Color.green);
-        }
-
-        public void PickupItem()
-        {
-            interactItem.transform.position = HoldPosition.position;
-            interactItem.transform.rotation = HoldPosition.rotation;
-            interactItem.transform.SetParent(HoldPosition);
-            interactItemRB.isKinematic = true;
-            interactItemCollider.enabled = false;
-
-            var pickedItem = interactItem.GetComponent<BaseItem>().GetItemName();
-            inventory.AddToInventory(pickedItem);
-            Destroy(interactItem.transform.gameObject);
-        }
-
-        public void AddToInventory(String pickedItem) { 
-        
-        }
-
-        public void ReleaseItem()
-        {
-            if (interactItem != null)
-            {
-                interactItem.transform.SetParent(null);
-                interactItemRB.isKinematic = false;
-                interactItemCollider.enabled = true;
-
-                interactItem = null;
-            }
-        }
-
-
-
-        private void SetRagdollParts()
-        {
-            Collider[] colliders = this.gameObject.GetComponentsInChildren<Collider>();
-            Rigidbody[] rigidbodies = this.gameObject.GetComponentsInChildren<Rigidbody>();
-
-            foreach (Collider c in colliders)
-            {
-                if (c.gameObject != this.gameObject)
-                {
-                    c.isTrigger = true;
-                    RagdollParts.Add(c);
-                }
-            }
-
-            // Disable physics for rigidbodies
-            foreach (Rigidbody rb in rigidbodies)
-            {
-                if (rb.gameObject != this.gameObject)
-                {
-                    rb.isKinematic = true;
-                }
-            }
-        }
-
-        private void ActivateRagdolls()
-        {
-            if (animator != null)
-            {
-                animator.enabled = false;
-            }
-
-            foreach (Collider c in RagdollParts)
-            {
-                if (c.gameObject != this.gameObject)
-                {
-                    c.isTrigger = false;  
-                }
-            }
-
-            Rigidbody[] rigidbodies = this.gameObject.GetComponentsInChildren<Rigidbody>();
-
-            foreach (Rigidbody rb in rigidbodies)
-            {
-                if (rb.gameObject != this.gameObject)
-                {
-                    rb.isKinematic = false;  
-                }
-            }
-        }
-        private void DeactivateRagdolls()
-        {
-            if (animator != null)
-            {
-                animator.enabled = true;
-            }
-
-            foreach (Collider c in RagdollParts)
-            {
-                if (c.gameObject != this.gameObject)
-                {
-                    c.isTrigger = true;  
-                }
-            }
-
-            Rigidbody[] rigidbodies = this.gameObject.GetComponentsInChildren<Rigidbody>();
-
-            foreach (Rigidbody rb in rigidbodies)
-            {
-                if (rb.gameObject != this.gameObject)
-                {
-                    rb.isKinematic = true;  
-                }
             }
         }
 
