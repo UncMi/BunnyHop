@@ -240,17 +240,22 @@ namespace Psychonaut
             // Get the collision point on the player
             Vector3 playerContactPoint = collision.contacts[0].point;
 
+            // Get the top of the object's collider
+            Collider objectCollider = collision.collider;
+            float objectTopY = objectCollider.bounds.max.y;
+
+            // Calculate the distance from the top of the object
+            float distanceFromTop = objectTopY - playerContactPoint.y;
+
             // Check if the contact point on the player's collider is below 0.5f of its height
-            if (playerContactPoint.y <= playerCollider.bounds.min.y + 0.5f) // Adjust this if needed
+            // and the distance from the top of the object is greater than 0.01f
+            if (playerContactPoint.y <= playerCollider.bounds.min.y + 0.5f && distanceFromTop > 0.01f)
             {
                 // Check if horizontal speed is greater than 5f before clipping
                 if (horizontalSpeed > 5f)
                 {
-                    Collider collider = collision.collider;
-                    Vector3 objectTop = collider.bounds.max; // Get the top of the object
-
                     // Set the player's position to be on top of the object, preserving horizontal velocity
-                    transform.position = new Vector3(transform.position.x, objectTop.y + 1f, transform.position.z);
+                    transform.position = new Vector3(transform.position.x, objectTopY + 0.1f, transform.position.z);
                     HandleJump();
 
                     // Preserve horizontal velocity after clipping
@@ -258,7 +263,7 @@ namespace Psychonaut
                 }
             }
         }
-        // wawawa
+
 
 
 
@@ -305,7 +310,7 @@ namespace Psychonaut
             {
                 inputDir = Vector3.Cross(Vector3.Cross(groundNormal, inputDir), groundNormal);
                 GroundAccelerate();
-                //ApplyFriction();
+                ApplyFriction();
             }
 
             else
