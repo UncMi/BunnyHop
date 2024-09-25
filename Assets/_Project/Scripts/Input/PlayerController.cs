@@ -91,18 +91,18 @@ namespace Psychonaut
 
         private Vector3 groundNormal;
         [SerializeField]private float mouseSensitivity = 1f;
-        [SerializeField]private float groundAcceleration = 100f;
+        [SerializeField]private float groundAcceleration = 300f;
         [SerializeField]private float airAcceleration = 100f;
         [SerializeField]private float groundLimit = 12f;
         [SerializeField]private float airLimit = 2f;
-        [SerializeField]private float gravity = 4f;
-        [SerializeField]private float jumpHeight = 6f;
-        [SerializeField]private float slopeLimit = 20f;
-        [SerializeField]private float friction = 6f;
+        [SerializeField]private float gravity = 28f;
+        [SerializeField]private float jumpHeight = 16f;
+        [SerializeField]private float slopeLimit = 25f;
+        [SerializeField]private float friction = 8f;
         [SerializeField]private float trimpLimit = 5f;
         [SerializeField]private float groundDistance = 0.4f;
-        [SerializeField] private float clipDistance = 0.5f;  
-        [SerializeField] private float fallSpeedConversionRate = 0.5f;  
+        [SerializeField]private float clipDistance = 0.5f;  
+        [SerializeField]private float fallSpeedConversionRate = 0.5f;  
 
         [SerializeField]
         private string yAxisInput = "Vertical";
@@ -201,6 +201,28 @@ namespace Psychonaut
             }
             if ( isJumpHeld && groundChecker.GetGroundDistance()<=groundDistance)
             {
+                RaycastHit hit;
+
+                // Cast a ray from the player's position downwards
+                if (Physics.Raycast(transform.position, Vector3.down, out hit, groundDistance + clipDistance, ~LayerMask.GetMask("Player")))
+                {
+                    groundNormal = hit.normal;
+                    onGround = true;
+                    ableToJump = true;
+
+                    // Check if the surface is walkable (based on slope limit)
+                    if (Vector3.Angle(hit.normal, Vector3.up) > slopeLimit)
+                    {
+                        // If the surface is too steep, mark as not on ground
+                        onGround = false;
+                        ableToJump = false;
+                    }
+                }
+                else
+                {
+                    onGround = false;
+                    ableToJump = false;
+                }
                 HandleJump();
             }
 
