@@ -6,6 +6,7 @@ using UnityEditor.Rendering;
 using System.Diagnostics.CodeAnalysis;
 using System;
 using System.Collections;
+using TMPro;
 
 interface IInteractive
 {
@@ -99,8 +100,9 @@ namespace Psychonaut
         [SerializeField]private float slopeLimit = 20f;
         [SerializeField]private float friction = 6f;
         [SerializeField]private float trimpLimit = 5f;
-        [SerializeField]private float groundDistance = 1f;
+        [SerializeField]private float groundDistance = 0.4f;
         [SerializeField] private float clipDistance = 0.5f;  
+        [SerializeField] private float fallSpeedConversionRate = 0.5f;  
 
         [SerializeField]
         private string yAxisInput = "Vertical";
@@ -114,6 +116,8 @@ namespace Psychonaut
 
 
         private bool onGround;
+
+        [SerializeField] private TMP_Text Text_VerticalSpeed;
 
 
         List<Timer> timers;
@@ -168,110 +172,7 @@ namespace Psychonaut
 
         }
 
-        private void OnCollisionStay(Collision other)
-        {
-            ContactPoint[] contacts = other.contacts;
-            for (int i = 0; i < contacts.Length; i++)
-            {
-                ContactPoint contactPoint = contacts[i];
-
-                // Check if the surface is walkable (i.e., ground, not a wall)
-                if (contactPoint.normal.y > Mathf.Cos(slopeLimit * Mathf.Deg2Rad)) // Slope limit comparison
-                {
-                    groundNormal = contactPoint.normal;
-                    onGround = true;
-
-                    // Handle jump if jump button is held and we're grounded
-                    if (isJumpHeld)
-                    {
-                        HandleJump();
-                    }
-
-                    break; // Stop the loop once we've found a valid ground contact
-                }
-                else
-                {
-                    // Handle side collisions (e.g., walls)
-                    // Preserve horizontal momentum on side collisions
-                    Vector3 horizontalVelocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-                    rb.velocity = new Vector3(horizontalVelocity.x, rb.velocity.y, horizontalVelocity.z);
-                }
-            }
-
-        }
-
-        private void OnCollisionEnter(Collision collision)
-        {
-            // Check if the object is climbable by distance from the top
-            if (IsClimbableObject(collision))
-            {
-                // Clip to the top of the object
-                ClipToTopOfObject(collision);
-            }
-        }
-
-        // Check if the object height is less than or equal to 3f
-        private bool IsClimbableObject(Collision collision)
-        {
-            // Get the collision point on the object
-            Vector3 objectContactPoint = collision.contacts[0].point;
-
-            // Get the top of the object's collider (maximum y position)
-            Collider objectCollider = collision.collider;
-            float objectTopY = objectCollider.bounds.max.y;
-
-            // Calculate the vertical distance between the contact point and the top of the object
-            float distanceFromTop = objectTopY - objectContactPoint.y;
-
-            // Check if the distance is within the clip threshold (0.5 units)
-            return distanceFromTop <= 0.5f;
-        }
-
-        // Clip the player on top of the object without losing horizontal momentum
-        private void ClipToTopOfObject(Collision collision)
-        {
-            // Calculate the horizontal speed (ignoring the y component)
-            Vector3 horizontalVelocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-            float horizontalSpeed = horizontalVelocity.magnitude;
-
-            // Get the player's collider
-            Collider playerCollider = GetComponent<Collider>();
-
-            // Get the collision point on the player
-            Vector3 playerContactPoint = collision.contacts[0].point;
-
-            // Get the top of the object's collider
-            Collider objectCollider = collision.collider;
-            float objectTopY = objectCollider.bounds.max.y;
-
-            // Calculate the distance from the top of the object
-            float distanceFromTop = objectTopY - playerContactPoint.y;
-
-            // Check if the contact point on the player's collider is below 0.5f of its height
-            // and the distance from the top of the object is greater than 0.01f
-            if (playerContactPoint.y <= playerCollider.bounds.min.y + 0.5f && distanceFromTop > 0.01f)
-            {
-                // Check if horizontal speed is greater than 5f before clipping
-                if (horizontalSpeed > 5f)
-                {
-                    // Set the player's position to be on top of the object, preserving horizontal velocity
-                    transform.position = new Vector3(transform.position.x, objectTopY + 0.1f, transform.position.z);
-                    HandleJump();
-
-                    // Preserve horizontal velocity after clipping
-                    rb.velocity = new Vector3(horizontalVelocity.x, rb.velocity.y, horizontalVelocity.z);
-                }
-            }
-        }
-
-
-
-
-
-
-
-
-
+        
 
         void Update()
         {
@@ -280,7 +181,9 @@ namespace Psychonaut
             HandleMovement();
             CheckPosition();
             LowerBodyStateMachine.Update();
-            
+            float verticalSpeed = rb.velocity.y;
+            Text_VerticalSpeed.text = "Vertical Speed: " + verticalSpeed.ToString("F2");
+
 
         }
 
@@ -328,6 +231,91 @@ namespace Psychonaut
             HandleRotation();
             
         }
+
+        private void OnCollisionStay(Collision other)
+        {
+            ContactPoint[] contacts = other.contacts;
+            for (int i = 0; i < contacts.Length; i++)
+            {
+                ContactPoint contactPoint = contacts[i];
+
+                // Check if the surface is walkable (i.e., ground, not a wall)
+                if (contactPoint.normal.y > Mathf.Cos(slopeLimit * Mathf.Deg2Rad)) // Slope limit comparison
+                {
+                    groundNormal = contactPoint.normal;
+                    onGround = true;
+                    ableToJump = true;
+
+                    if (isJumpHeld)
+                    {
+                        HandleJump();
+                    }
+
+                    break; 
+                }
+                else
+                {
+                    onGround = false;
+                    ableToJump = false;
+                    Vector3 horizontalVelocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+                    rb.velocity = new Vector3(horizontalVelocity.x, rb.velocity.y, horizontalVelocity.z);
+                }
+            }
+
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+
+            if (IsClimbableObject(collision))
+            {
+                ClipToTopOfObject(collision);
+            }
+        }
+
+        // Check if the object height is less than or equal to 3f
+        private bool IsClimbableObject(Collision collision)
+        {
+            Vector3 objectContactPoint = collision.contacts[0].point;
+            Collider objectCollider = collision.collider;
+            float objectTopY = objectCollider.bounds.max.y;
+
+            float distanceFromTop = objectTopY - objectContactPoint.y;
+            return distanceFromTop <= 0.5f;
+        }
+        // Clip the player on top of the object without losing horizontal momentum
+        private void ClipToTopOfObject(Collision collision)
+        {
+            Vector3 horizontalVelocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+            float horizontalSpeed = horizontalVelocity.magnitude;
+
+            Collider playerCollider = GetComponent<Collider>();
+            Vector3 playerContactPoint = collision.contacts[0].point;
+            Collider objectCollider = collision.collider;
+            float objectTopY = objectCollider.bounds.max.y;
+
+            float distanceFromTop = objectTopY - playerContactPoint.y;
+
+            // Check if the player is near the edge of the object
+            bool isNearEdge = Mathf.Abs(playerContactPoint.x - objectCollider.bounds.max.x) < 0.5f ||
+                              Mathf.Abs(playerContactPoint.z - objectCollider.bounds.max.z) < 0.5f;
+
+            if (playerContactPoint.y <= playerCollider.bounds.min.y + 0.5f && isNearEdge)
+            {
+                if (horizontalSpeed > 5f)
+                {
+                    transform.position = new Vector3(transform.position.x, objectTopY + 0.4f, transform.position.z);
+                    playerVelocity.y += jumpHeight;
+                    onGround = false;
+
+                    StartCoroutine(JumpTimer());
+
+                    rb.velocity = new Vector3(horizontalVelocity.x, rb.velocity.y, horizontalVelocity.z);
+                }
+            }
+        }
+
+
 
 
         void ApplyImmediateGravity()
