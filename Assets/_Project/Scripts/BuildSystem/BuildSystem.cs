@@ -2,33 +2,36 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
-
 namespace Psychonaut
 {
     public class BuildSystem : MonoBehaviour
     {
+        public Transform shootingPoint;  // The point from where the player "shoots" or looks
+        public GameObject blockObject;   // The block to place
 
-        public Transform shootingPoint;
-        public GameObject blockObject;
+        public Color highlightedColor;   // Color of the preview block
+        private GameObject previewBlock; // The preview block instance
+        private Vector3 blockScale;      // Scale of the block to snap to the grid
 
-        public Color normalColor;
-        public Color highlightedColor;
-
-        GameObject lastHighlightedBlock;
-        Vector3 blockScale;
+        private float fixedDistanceFromPlayer = 15f;  // Distance at which the block is placed
 
         private void Start()
         {
             blockScale = blockObject.transform.localScale;
+
+            // Create a preview block and disable it at the start
+            previewBlock = Instantiate(blockObject);
+            previewBlock.GetComponent<Renderer>().material.color = highlightedColor;  // Set preview color
+            previewBlock.SetActive(false);  // Hide the preview block initially
         }
 
-        /*
         private void Update()
         {
+            UpdatePreviewBlock();  // Update the preview block position every frame
+
             if (Input.GetMouseButtonDown(0))
             {
-                BuildBlock(blockObject);
+                BuildBlock();  // Build the block when left mouse button is clicked
             }
 
             if (Input.GetMouseButtonDown(1))
@@ -36,7 +39,8 @@ namespace Psychonaut
                 DestroyBlock();
             }
         }
-        */
+
+
         void DestroyBlock()
         {
             if (Physics.Raycast(shootingPoint.position, shootingPoint.forward, out RaycastHit hitInfo))
@@ -49,41 +53,32 @@ namespace Psychonaut
             }
 
         }
-        void BuildBlock(GameObject block)
+
+        // Update the position of the preview block based on the fixed distance
+        void UpdatePreviewBlock()
         {
-            if (Physics.Raycast(shootingPoint.position, shootingPoint.forward, out RaycastHit hitInfo))
-            {
-                // Get the block scale to determine proper snapping
-                Vector3 spawnPosition;
+            // Calculate the spawn position based on the fixed distance
+            Vector3 spawnPosition = shootingPoint.position + shootingPoint.forward * fixedDistanceFromPlayer;
 
-                // If we hit a block, snap the new block to the face of the hit block
-                if (hitInfo.transform.CompareTag("Block"))
-                {
-                    // Calculate the position by snapping the block to the surface of the hit block
-                    Vector3 hitBlockPosition = hitInfo.transform.position;
-                    Vector3 normal = hitInfo.normal;
+            // Snap the position to the grid (optional, depending on how you want placement to work)
+            spawnPosition = new Vector3(
+                Mathf.Round(spawnPosition.x / blockScale.x) * blockScale.x,
+                Mathf.Round(spawnPosition.y / blockScale.y) * blockScale.y,
+                Mathf.Round(spawnPosition.z / blockScale.z) * blockScale.z
+            );
 
-                    spawnPosition = new Vector3(
-                        Mathf.Round(hitBlockPosition.x + normal.x * blockScale.x),
-                        Mathf.Round(hitBlockPosition.y + normal.y * blockScale.y),
-                        Mathf.Round(hitBlockPosition.z + normal.z * blockScale.z)
-                    );
-                }
-                else
-                {
-                    // For other surfaces, use the same method but adjusted for scale
-                    spawnPosition = new Vector3(
-                        Mathf.Round(hitInfo.point.x / blockScale.x) * blockScale.x,
-                        Mathf.Round(hitInfo.point.y / blockScale.y) * blockScale.y,
-                        Mathf.Round(hitInfo.point.z / blockScale.z) * blockScale.z
-                    );
-                }
-
-                // Instantiate the block at the snapped position
-                Instantiate(block, spawnPosition, Quaternion.identity);
-            }
+            // Update the position of the preview block
+            previewBlock.transform.position = spawnPosition;
+            previewBlock.SetActive(true);  // Show the preview block
         }
 
+        // Build the block at the position of the preview block
+        void BuildBlock()
+        {
+            if (previewBlock.activeSelf)
+            {
+                Instantiate(blockObject, previewBlock.transform.position, Quaternion.identity);
+            }
+        }
     }
-
 }

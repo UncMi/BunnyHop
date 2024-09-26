@@ -2559,12 +2559,12 @@ MonoBehaviour:
   airAcceleration: 100
   groundLimit: 12
   airLimit: 2
-  gravity: 28
-  jumpHeight: 16
+  gravity: 32
+  jumpHeight: 17
   slopeLimit: 45
   friction: 8
   trimpLimit: 5
-  groundDistance: 0.5
+  groundDistance: 0.3
   clipDistance: 0.5
   fallSpeedConversionRate: 0.5
   yAxisInput: Vertical
@@ -32507,7 +32507,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 919132149501739312}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3ea2e94885adef2469c77056682e061c, type: 3}
   m_Name: 
@@ -32515,7 +32515,6 @@ MonoBehaviour:
   shootingPoint: {fileID: 850397303}
   blockObject: {fileID: 8059501690207371647, guid: ff2b997baf1102d4c80d0db0ae849a60,
     type: 3}
-  normalColor: {r: 0.6226415, g: 0.15566038, b: 0.15566038, a: 0}
   highlightedColor: {r: 0.9056604, g: 0.9056604, b: 0.9056604, a: 0}
 --- !u!114 &919132149501739319
 MonoBehaviour:

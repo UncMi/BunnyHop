@@ -76,12 +76,12 @@ namespace Psychonaut
         bool isInteracting;
         private bool isJumpHeld;
         private bool ableToJump = true;
-
+        
 
 
         Vector3 movement;
         Vector3 playerVelocity;
-        [SerializeField]private bool clampGroundSpeed;
+        [SerializeField] private bool clampGroundSpeed;
 
 
         private Vector3 inputDir;
@@ -89,20 +89,25 @@ namespace Psychonaut
         private Vector3 _inputRot;
         public Vector3 InputRot => _inputRot;
 
+        private float fallSpeed = 0;
+        private float decayFactor = 0.3f;
+        private float fallSpeedBonus;
+        private float maxFallSpeedBonus = 20;
+
         private Vector3 groundNormal;
-        [SerializeField]private float mouseSensitivity = 1f;
-        [SerializeField]private float groundAcceleration = 300f;
-        [SerializeField]private float airAcceleration = 100f;
-        [SerializeField]private float groundLimit = 12f;
-        [SerializeField]private float airLimit = 2f;
-        [SerializeField]private float gravity = 28f;
-        [SerializeField]private float jumpHeight = 16f;
-        [SerializeField]private float slopeLimit = 25f;
-        [SerializeField]private float friction = 8f;
-        [SerializeField]private float trimpLimit = 5f;
-        [SerializeField]private float groundDistance = 0.4f;
-        [SerializeField]private float clipDistance = 0.5f;  
-        [SerializeField]private float fallSpeedConversionRate = 0.5f;  
+        [SerializeField] private float mouseSensitivity = 1f;
+        [SerializeField] private float groundAcceleration = 100f;
+        [SerializeField] private float airAcceleration = 100f;
+        [SerializeField] private float groundLimit = 12f;
+        [SerializeField] private float airLimit = 2f;
+        [SerializeField] private float gravity = 4f;
+        [SerializeField] private float jumpHeight = 6f;
+        [SerializeField] private float slopeLimit = 20f;
+        [SerializeField] private float friction = 6f;
+        [SerializeField] private float trimpLimit = 5f;
+        [SerializeField] private float groundDistance = 0.4f;
+        [SerializeField] private float clipDistance = 0.5f;
+        [SerializeField] private float fallSpeedConversionRate = 0.2f;
 
         [SerializeField]
         private string yAxisInput = "Vertical";
@@ -172,7 +177,7 @@ namespace Psychonaut
 
         }
 
-        
+
 
         void Update()
         {
@@ -199,29 +204,22 @@ namespace Psychonaut
             {
                 playerVelocity = playerVelocity.normalized * groundLimit;
             }
-            if ( isJumpHeld && groundChecker.GetGroundDistance()<=groundDistance)
+            if (isJumpHeld && groundChecker.GetGroundDistance() <= groundDistance)
             {
                 RaycastHit hit;
-
-                // Cast a ray from the player's position downwards
                 if (Physics.Raycast(transform.position, Vector3.down, out hit, groundDistance + clipDistance, ~LayerMask.GetMask("Player")))
                 {
                     groundNormal = hit.normal;
-                    onGround = true;
-                    ableToJump = true;
-
-                    // Check if the surface is walkable (based on slope limit)
                     if (Vector3.Angle(hit.normal, Vector3.up) > slopeLimit)
                     {
-                        // If the surface is too steep, mark as not on ground
                         onGround = false;
                         ableToJump = false;
                     }
-                }
-                else
-                {
-                    onGround = false;
-                    ableToJump = false;
+                    else if (playerVelocity.y <= 0)     
+                    {
+                        onGround = true;
+                        ableToJump = true;
+                    }
                 }
                 HandleJump();
             }
@@ -230,7 +228,7 @@ namespace Psychonaut
             {
                 onGround = false;
             }
-            
+
             if (onGround)
             {
                 inputDir = Vector3.Cross(Vector3.Cross(groundNormal, inputDir), groundNormal);
@@ -243,6 +241,12 @@ namespace Psychonaut
                 AirAccelerate();
                 ApplyImmediateGravity();
             }
+
+            if (playerVelocity.y < -20f)
+                fallSpeed = playerVelocity.y;
+            else if(playerVelocity.y >0f)
+                fallSpeed = 0f;
+            
             rb.velocity = playerVelocity;
             animator.SetFloat("Speed", playerVelocity.x);
             onGround = false;
@@ -251,7 +255,7 @@ namespace Psychonaut
         private void LateUpdate()
         {
             HandleRotation();
-            
+
         }
 
         private void OnCollisionStay(Collision other)
@@ -273,7 +277,7 @@ namespace Psychonaut
                         HandleJump();
                     }
 
-                    break; 
+                    break;
                 }
                 else
                 {
@@ -402,7 +406,7 @@ namespace Psychonaut
             if (Input.GetButtonDown(jumpButton))
             {
                 isJumpHeld = true;
-                
+
             }
             if (Input.GetButtonUp(jumpButton))
             {
@@ -422,7 +426,10 @@ namespace Psychonaut
                     playerVelocity.y = 0f; // Preserve horizontal momentum
                 }
 
-                playerVelocity.y += jumpHeight;
+                fallSpeedBonus = Mathf.Clamp(fallSpeedBonus * decayFactor, 0, maxFallSpeedBonus);
+                fallSpeedBonus = Math.Abs(fallSpeed) * fallSpeedConversionRate * decayFactor;
+                playerVelocity.y += jumpHeight + fallSpeedBonus;
+
                 onGround = false;
 
                 StartCoroutine(JumpTimer());
@@ -462,10 +469,10 @@ namespace Psychonaut
 
                 // Apply the horizontal velocity and keep the vertical velocity intact
                 rb.velocity = new Vector3(horizontalVelocity.x, verticalVelocity, horizontalVelocity.z);
-            }   
+            }
         }
 
-       
+
 
         private IEnumerator JumpTimer()
         {
@@ -487,11 +494,17 @@ namespace Psychonaut
         {
             // Reset the player's position to (0, 0, 0)
             transform.position = Vector3.zero;
-            // Optionally reset velocity if using Rigidbody
-            Rigidbody rb = GetComponent<Rigidbody>();
+
+            // Reset Rigidbody velocity
             if (rb != null)
             {
                 rb.velocity = Vector3.zero;
+                playerVelocity = Vector3.zero;  // Reset the stored player velocity
+
+                // Reset fall speed and any jump-related state
+                fallSpeed = 0f;
+                isJumpHeld = false;
+                ableToJump = true;
             }
         }
 
