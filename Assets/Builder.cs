@@ -17,18 +17,16 @@ namespace Psychonaut
 
         private Camera mainCamera;
 
-
         [Header("Noclip Settings")]
         [SerializeField] float noclipMoveSpeed = 100f;
+        [SerializeField] float sprintMoveSpeed = 10f;  // Sprint speed
         [SerializeField] string noclipButton = "Noclip";
-
-        [SerializeField]
-        private string yAxisInput = "Vertical";
-
-        [SerializeField]
-        private string xAxisInput = "Horizontal";
+        [SerializeField] private string sprintButton = "Sprint"; // Sprint input
+        [SerializeField] private string yAxisInput = "Vertical";
+        [SerializeField] private string xAxisInput = "Horizontal";
 
         private bool isNoclipActive = false;
+        private bool isSprinting = false;  // Sprint state
         private Vector3 inputDir;
         private Vector3 playerVelocity;
 
@@ -40,14 +38,31 @@ namespace Psychonaut
 
         void Update()
         {
+            HandleSprintToggle();  // Check for sprint toggle
             HandleNoclipMovement();
         }
 
+        private void HandleSprintToggle()
+        {
+            // Check if the Sprint button is pressed
+            if (Input.GetButtonDown(sprintButton))
+            {
+                isSprinting = !isSprinting;  // Toggle sprint mode
+                if (isSprinting)
+                {
+                    noclipMoveSpeed = sprintMoveSpeed;  // Set to sprint speed
+                }
+                else
+                {
+                    noclipMoveSpeed = 100f;  // Reset to normal speed
+                }
+            }
+        }
 
         private void HandleNoclipMovement()
         {
-            float moveX = Input.GetAxis(xAxisInput);
-            float moveZ = Input.GetAxis(yAxisInput);
+            float moveX = Input.GetAxisRaw(xAxisInput);  // Get raw input for immediate response
+            float moveZ = Input.GetAxisRaw(yAxisInput);  // Get raw input for immediate response
             float moveY = 0f;
 
             // Move up or down using jump button or crouch key
@@ -60,10 +75,12 @@ namespace Psychonaut
                 moveY = -1f;
             }
 
+            // Calculate movement direction and velocity
             Vector3 moveDirection = new Vector3(moveX, moveY, moveZ).normalized;
-            Vector3 moveVelocity = moveDirection * noclipMoveSpeed * Time.deltaTime;
+            Vector3 moveVelocity = moveDirection * noclipMoveSpeed;
 
-            transform.position += mainCamera.transform.TransformDirection(moveVelocity);
+            // Move the player based on camera direction
+            transform.position += mainCamera.transform.TransformDirection(moveVelocity) * Time.deltaTime;
         }
     }
 }
