@@ -16,6 +16,7 @@ namespace Psychonaut
         public event UnityAction<Vector2> Move = delegate { };
         public event UnityAction<Vector2, bool> Look = delegate { };
         public event UnityAction<bool> Jump = delegate { };
+        public event UnityAction<bool> Crouch = delegate { };
         public event UnityAction<bool> Interact = delegate { };
         public event UnityAction<bool> Interact2 = delegate { };
         public event UnityAction<bool> Drop = delegate { };
@@ -138,6 +139,19 @@ namespace Psychonaut
         public void OnDrop(InputAction.CallbackContext context)
         {
             throw new System.NotImplementedException();
+        }
+
+        public void OnCrouch(InputAction.CallbackContext context)
+        {
+            switch (context.phase)
+            {
+                case InputActionPhase.Started:
+                    Crouch.Invoke(true);
+                    break;
+                case InputActionPhase.Canceled:
+                    Crouch.Invoke(false);
+                    break;
+            }
         }
     }
 }

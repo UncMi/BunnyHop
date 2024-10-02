@@ -10,8 +10,7 @@ namespace Psychonaut
 
         protected static readonly int LocomotionHash = Animator.StringToHash("Locomotion");
         protected static readonly int JumpHash = Animator.StringToHash("Jump");
-        protected static readonly int InteractHash = Animator.StringToHash("Interact");
-        protected static readonly int NoInteractHash = Animator.StringToHash("NoInteract");
+
 
         // time blending between animations
         protected const float crossFadeDuration = 0.1f;
