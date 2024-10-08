@@ -11,7 +11,7 @@ PrefabInstance:
     - target: {fileID: 6796224162519473392, guid: c60814f5193591b4da6161d07e58402c,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 7.158826
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 6796224162519473392, guid: c60814f5193591b4da6161d07e58402c,
         type: 3}
@@ -21,7 +21,7 @@ PrefabInstance:
     - target: {fileID: 6796224162519473392, guid: c60814f5193591b4da6161d07e58402c,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 19.29874
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 6796224162519473392, guid: c60814f5193591b4da6161d07e58402c,
         type: 3}
@@ -76,7 +76,7 @@ PrefabInstance:
     - target: {fileID: 8059501690207371647, guid: c60814f5193591b4da6161d07e58402c,
         type: 3}
       propertyPath: m_Name
-      value: Surf-Right 1
+      value: Surf-Left
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -111,8 +111,8 @@ namespace Psychonaut
         [SerializeField] private float airAcceleration = 100f;
         [SerializeField] private float groundLimit = 12f;
         [SerializeField] private float airLimit = 2f;
-        [SerializeField] private float gravity = 4f;
-        [SerializeField] private float jumpHeight = 6f;
+        [SerializeField] private float gravity = 36f;
+        [SerializeField] private float jumpHeight = 16f;
         [SerializeField] private float slopeLimit = 20f;
         [SerializeField] private float friction = 6f;
         [SerializeField] private float trimpLimit = 5f;
@@ -197,7 +197,6 @@ namespace Psychonaut
         void Update()
         {
 
-            HandlePauseMenu();
             //movement = new Vector3(input.Direction.x, 0f, input.Direction.y);
 
             HandleMovement();
@@ -360,31 +359,7 @@ namespace Psychonaut
             }
         }
 
-        private bool isPaused = false;
-        void HandlePauseMenu()
-        {
-            if (Input.GetButtonDown("Escape"))
-            {
-                isPaused = !isPaused; // Toggle the pause state
-
-                if (isPaused)
-                {
-                    // Open the pause menu and pause the game
-                    PauseMenu.SetActive(true);
-                    Time.timeScale = 0f; // Pause the game
-                    Cursor.lockState = CursorLockMode.None; // Unlock the cursor
-                    Cursor.visible = true; // Make the cursor visible
-                }
-                else
-                {
-                    // Close the pause menu and resume the game
-                    PauseMenu.SetActive(false);
-                    Time.timeScale = 1f; // Resume the game
-                    Cursor.lockState = CursorLockMode.Locked; // Lock the cursor again
-                    Cursor.visible = false; // Hide the cursor
-                }
-            }
-        }
+        
 
 
 

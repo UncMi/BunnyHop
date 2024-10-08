@@ -14,6 +14,8 @@ namespace Psychonaut
         [SerializeField, Self] GroundChecker groundChecker;
         [SerializeField, Self] Animator animator;
         [SerializeField, Self] Interactor interactor;
+        [SerializeField, Self] BuildSystem buildSystem;
+        [SerializeField, Self] PlayerController playerController;
 
         private Camera mainCamera;
 
@@ -24,6 +26,9 @@ namespace Psychonaut
         [SerializeField] private string sprintButton = "Sprint"; // Sprint input
         [SerializeField] private string yAxisInput = "Vertical";
         [SerializeField] private string xAxisInput = "Horizontal";
+
+        [Header("Menu Settings")]
+        [SerializeField] GameObject PauseMenu;
 
         private bool isNoclipActive = false;
         private bool isSprinting = false;  // Sprint state
@@ -82,5 +87,9 @@ namespace Psychonaut
             // Move the player based on camera direction
             transform.position += mainCamera.transform.TransformDirection(moveVelocity) * Time.deltaTime;
         }
+
+       
+
+
     }
 }

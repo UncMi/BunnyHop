@@ -5,12 +5,19 @@ public class BuildSystem : MonoBehaviour
     public Transform shootingPoint;
     public GameObject[] blockPrefabs;
     public GameObject ghostBlockPrefab;
-    public float rayDistance = 15f;
-    public Camera playerCamera; // Add a reference to the camera
+    public float rayDistance = 30f;
+    public Camera playerCamera; 
 
     private GameObject currentGhostBlock;
     private GameObject currentBlockPrefab;
     private int currentBlockIndex = 0;
+    private bool isXRotationLocked = false; 
+    private bool isRotationMode = false;
+    private bool isDistanceMode = false;
+
+
+    private float rotationSensitivity = 10f;
+    private float distanceSensitivity = 4f;
 
     private void Start()
     {
@@ -23,8 +30,6 @@ public class BuildSystem : MonoBehaviour
     void Update()
     {
         UpdateGhostBlockPosition();
-
-        // Handle changing block type with number keys
         for (int i = 0; i < blockPrefabs.Length; i++)
         {
             if (Input.GetKeyDown((i + 1).ToString()))
@@ -34,43 +39,107 @@ public class BuildSystem : MonoBehaviour
                 UpdateGhostBlockAppearance();
             }
         }
-
-        // Place the block with left mouse click
         if (Input.GetMouseButtonDown(0))
         {
             PlaceBlockAtGhostPosition();
         }
 
-        // Destroy a block with right mouse click
         if (Input.GetMouseButtonDown(1))
         {
             DestroyBlock();
         }
-    }
 
+        if (Input.GetKeyDown(KeyCode.X))
+        {
+            isXRotationLocked = !isXRotationLocked;
+            if (isXRotationLocked)
+            {
+                AddedRotation.x = 0f;           
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            isDistanceMode = false;
+            isRotationMode = !isRotationMode;
+        }
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            isRotationMode = false;
+            isDistanceMode = !isDistanceMode;
+        }
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            AddedRotation = new Vector3(0f, 0f, 0f);
+        }
+        ChangeGhostRotation();
+        ChangeGhostDistance();
+    }
 
     void UpdateGhostBlockPosition()
     {
-        // Calculate the position exactly 15f away from the player
-        Vector3 targetPosition = shootingPoint.position + shootingPoint.forward * rayDistance;
+        Vector3 targetDirection = (shootingPoint.position + shootingPoint.forward * (rayDistance + AddedDistance)) - shootingPoint.position;
+        Vector3 targetPosition = shootingPoint.position + targetDirection.normalized * (rayDistance + AddedDistance);
 
-        // Move the ghost block slightly down so that it's positioned lower than the camera
-        targetPosition += Vector3.down * 2.0f; // Adjust the downward offset (you can tweak this value)
+        targetPosition += Vector3.down * 5.0f; 
 
-        // Combine the block's rotation with the camera's rotation
-        Quaternion ghostRotation = Quaternion.Euler(currentBlockPrefab.transform.rotation.eulerAngles + playerCamera.transform.rotation.eulerAngles);
+        Quaternion ghostRotation = Quaternion.LookRotation(-playerCamera.transform.forward, Vector3.up);
 
-        // Tilt the block upwards, as if looking from below (reverse tilt)
-        ghostRotation *= Quaternion.Euler(-30, 0, 0); // Tilt the block by -30 degrees around the X-axis
+        if (isXRotationLocked)
+        {
+            ghostRotation.eulerAngles = new Vector3(0, ghostRotation.eulerAngles.y, ghostRotation.eulerAngles.z);
+        }
 
-        // Update the ghost block's position, rotation, and scale
+        Quaternion addedRotationQuaternion = Quaternion.Euler(AddedRotation);
+        ghostRotation *= addedRotationQuaternion;
+
         currentGhostBlock.transform.position = targetPosition;
-        currentGhostBlock.transform.rotation = ghostRotation; // Apply the combined rotation and tilt
+        currentGhostBlock.transform.rotation = ghostRotation; // Apply the new rotation
         currentGhostBlock.transform.localScale = currentBlockPrefab.transform.localScale; // Match scale
         currentGhostBlock.SetActive(true);
     }
 
+    Vector3 AddedRotation = new Vector3 (0f, 0f, 0f);
+    float AddedDistance = 0f;
 
+    void ChangeGhostRotation()
+    {
+        if (isRotationMode)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+
+            float mouseX = Input.GetAxis("Mouse X");
+            float mouseY = Input.GetAxis("Mouse Y");
+
+
+            AddedRotation += new Vector3(mouseY * rotationSensitivity, mouseX * rotationSensitivity, 0f);
+        }
+
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = false;
+        }
+    }
+
+    void ChangeGhostDistance()
+    {
+
+        if (isDistanceMode)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            float mouseY = Input.GetAxis("Mouse Y");
+
+            AddedDistance += mouseY * distanceSensitivity;
+        }
+
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = false;
+        }
+    }
 
     void UpdateGhostBlockAppearance()
     {
@@ -85,16 +154,13 @@ public class BuildSystem : MonoBehaviour
 
     void PlaceBlockAtGhostPosition()
     {
-        // Use the ghost block's exact position and rotation for placement
         Instantiate(currentBlockPrefab, currentGhostBlock.transform.position, currentGhostBlock.transform.rotation);
     }
 
     void DestroyBlock()
     {
-        // Raycast for detecting blocks to destroy, limited to 15f
         if (Physics.Raycast(shootingPoint.position, shootingPoint.forward, out RaycastHit hitInfo, rayDistance))
         {
-            // Ignore the ghost block and only target blocks with the "Block" tag
             if (hitInfo.transform.CompareTag("Block") && hitInfo.transform.gameObject != currentGhostBlock)
             {
                 Destroy(hitInfo.transform.gameObject);

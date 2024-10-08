@@ -20,11 +20,46 @@ namespace Psychonaut
 
         private bool isBuildState = false;
 
+        private bool isPaused = false;
+
+        public bool getPauseState()
+        {
+            return isPaused;
+        }
+        private void Update()
+        {
+            HandlePauseMenu();
+        }
+
+        void HandlePauseMenu()
+        {
+            if (Input.GetButtonDown("Escape"))
+            {
+                isPaused = !isPaused; // Toggle the pause state
+
+                if (isPaused)
+                {
+                    // Open the pause menu and pause the game
+                    PauseMenu.SetActive(true);
+                    Time.timeScale = 0f; // Pause the game
+                    Cursor.lockState = CursorLockMode.None; // Unlock the cursor
+                    Cursor.visible = true; // Make the cursor visible
+                }
+                else
+                {
+                    // Close the pause menu and resume the game
+                    PauseMenu.SetActive(false);
+                    Time.timeScale = 1f; // Resume the game
+                    Cursor.lockState = CursorLockMode.Locked; // Lock the cursor again
+                    Cursor.visible = false; // Hide the cursor
+                }
+            }
+        }
+
         public void MapEditorButton()
         {
-            isBuildState = playerController.gameObject.activeSelf;
 
-            if(isBuildState) 
+            if(!isBuildState) 
             {
                 PauseMenu_MapEditor_Text_OnOff.text = "On";
                 builder.enabled = true;
@@ -39,9 +74,9 @@ namespace Psychonaut
                 Cursor.lockState = CursorLockMode.Locked; 
                 Cursor.visible = false; 
 
-
+                isBuildState = !isBuildState;
             }
-            else if (!isBuildState)
+            else if (isBuildState)
             {
                 PauseMenu_MapEditor_Text_OnOff.text = "Off";
                 builder.enabled = false;
@@ -54,7 +89,9 @@ namespace Psychonaut
 
                 Time.timeScale = 1f; 
                 Cursor.lockState = CursorLockMode.Locked; 
-                Cursor.visible = false; 
+                Cursor.visible = false;
+
+                isBuildState = !isBuildState;
             }
         }
     }
