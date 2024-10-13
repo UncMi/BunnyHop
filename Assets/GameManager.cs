@@ -31,27 +31,30 @@ namespace Psychonaut
             HandlePauseMenu();
         }
 
+        public bool getPausedState()
+        {
+            if (isPaused) return true;
+            else return false;
+        }
         void HandlePauseMenu()
         {
             if (Input.GetButtonDown("Escape"))
             {
-                isPaused = !isPaused; // Toggle the pause state
+                isPaused = !isPaused;
 
                 if (isPaused)
                 {
-                    // Open the pause menu and pause the game
                     PauseMenu.SetActive(true);
-                    Time.timeScale = 0f; // Pause the game
-                    Cursor.lockState = CursorLockMode.None; // Unlock the cursor
-                    Cursor.visible = true; // Make the cursor visible
+                    Time.timeScale = 0f; 
+                    Cursor.lockState = CursorLockMode.None; 
+                    Cursor.visible = true; 
                 }
                 else
                 {
-                    // Close the pause menu and resume the game
                     PauseMenu.SetActive(false);
-                    Time.timeScale = 1f; // Resume the game
-                    Cursor.lockState = CursorLockMode.Locked; // Lock the cursor again
-                    Cursor.visible = false; // Hide the cursor
+                    Time.timeScale = 1f; 
+                    Cursor.lockState = CursorLockMode.Locked; 
+                    Cursor.visible = false;
                 }
             }
         }

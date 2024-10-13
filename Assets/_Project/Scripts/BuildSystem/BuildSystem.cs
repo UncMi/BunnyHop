@@ -14,6 +14,10 @@ public class BuildSystem : MonoBehaviour
     private bool isXRotationLocked = false; 
     private bool isRotationMode = false;
     private bool isDistanceMode = false;
+    private bool isScaleMode = false;
+    private bool isScaleMode_X = true;
+    private bool isScaleMode_Y = false;
+    private bool isScaleMode_Z = false;
 
 
     private float rotationSensitivity = 10f;
@@ -51,34 +55,74 @@ public class BuildSystem : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.X))
         {
-            isXRotationLocked = !isXRotationLocked;
-            if (isXRotationLocked)
+            if (!isScaleMode)
             {
-                AddedRotation.x = 0f;           
+                isXRotationLocked = !isXRotationLocked;
+                if (isXRotationLocked)
+                {
+                    AddedRotation.x = 0f;
+                }
+            }
+            else if (isScaleMode)
+            {
+                isScaleMode_X = true;
+                isScaleMode_Y = false;
+                isScaleMode_Z = false;
             }
         }
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            if (isScaleMode)
+            {
+                isScaleMode_X = false;
+                isScaleMode_Y = false;
+                isScaleMode_Z = true;
+            }
+        }
+       if (Input.GetKeyDown(KeyCode.C))
+        {
+            if (isScaleMode)
+            {
+                isScaleMode_X = false;
+                isScaleMode_Y = true;
+                isScaleMode_Z = false;
+            }
+        }
+
         if (Input.GetKeyDown(KeyCode.R))
         {
             isDistanceMode = false;
+            isScaleMode = false;
             isRotationMode = !isRotationMode;
         }
         if (Input.GetKeyDown(KeyCode.E))
         {
             isRotationMode = false;
+            isScaleMode = false;
             isDistanceMode = !isDistanceMode;
+        }
+
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            isRotationMode = false;
+            isDistanceMode = false;
+            isScaleMode = !isScaleMode;
         }
         if (Input.GetKeyDown(KeyCode.Q))
         {
             AddedRotation = new Vector3(0f, 0f, 0f);
+            AddedScale = new Vector3(0f, 0f, 0f);
         }
         ChangeGhostRotation();
         ChangeGhostDistance();
+        ChangeGhostScale();
     }
 
     void UpdateGhostBlockPosition()
     {
         Vector3 targetDirection = (shootingPoint.position + shootingPoint.forward * (rayDistance + AddedDistance)) - shootingPoint.position;
         Vector3 targetPosition = shootingPoint.position + targetDirection.normalized * (rayDistance + AddedDistance);
+        Vector3 targetScale = currentBlockPrefab.transform.localScale + AddedScale;
 
         targetPosition += Vector3.down * 5.0f; 
 
@@ -93,8 +137,8 @@ public class BuildSystem : MonoBehaviour
         ghostRotation *= addedRotationQuaternion;
 
         currentGhostBlock.transform.position = targetPosition;
-        currentGhostBlock.transform.rotation = ghostRotation; // Apply the new rotation
-        currentGhostBlock.transform.localScale = currentBlockPrefab.transform.localScale; // Match scale
+        currentGhostBlock.transform.rotation = ghostRotation;
+        currentGhostBlock.transform.localScale = targetScale;
         currentGhostBlock.SetActive(true);
     }
 
@@ -105,8 +149,6 @@ public class BuildSystem : MonoBehaviour
     {
         if (isRotationMode)
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
 
             float mouseX = Input.GetAxis("Mouse X");
             float mouseY = Input.GetAxis("Mouse Y");
@@ -115,11 +157,7 @@ public class BuildSystem : MonoBehaviour
             AddedRotation += new Vector3(mouseY * rotationSensitivity, mouseX * rotationSensitivity, 0f);
         }
 
-        else
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = false;
-        }
+      
     }
 
     void ChangeGhostDistance()
@@ -127,18 +165,38 @@ public class BuildSystem : MonoBehaviour
 
         if (isDistanceMode)
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
             float mouseY = Input.GetAxis("Mouse Y");
 
             AddedDistance += mouseY * distanceSensitivity;
         }
 
-        else
+      
+    }
+
+    private Vector3 AddedScale = new Vector3(0, 0, 0);
+
+    void ChangeGhostScale()
+    {
+        if (isScaleMode)
         {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = false;
+            float mouseX = Input.GetAxis("Mouse X");
+            float mouseY = Input.GetAxis("Mouse Y");
+
+            if (isScaleMode_X)
+            {
+                AddedScale += new Vector3(mouseX * distanceSensitivity, 0, 0);
+            }
+            if (isScaleMode_Y)
+            {
+                AddedScale += new Vector3(0, mouseX * distanceSensitivity, 0);
+            }
+            if (isScaleMode_Z)
+            {
+                AddedScale += new Vector3(0, 0, mouseX * distanceSensitivity);
+            }
+
         }
+        
     }
 
     void UpdateGhostBlockAppearance()
@@ -154,7 +212,8 @@ public class BuildSystem : MonoBehaviour
 
     void PlaceBlockAtGhostPosition()
     {
-        Instantiate(currentBlockPrefab, currentGhostBlock.transform.position, currentGhostBlock.transform.rotation);
+        GameObject placedBlock = Instantiate(currentBlockPrefab, currentGhostBlock.transform.position, currentGhostBlock.transform.rotation);
+        placedBlock.transform.localScale = currentGhostBlock.transform.localScale;
     }
 
     void DestroyBlock()

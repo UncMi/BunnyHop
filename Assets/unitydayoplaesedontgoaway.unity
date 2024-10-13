@@ -2532,11 +2532,11 @@ MonoBehaviour:
   InteractorSource: {fileID: 850397303}
   clampGroundSpeed: 0
   mouseSensitivity: 1
-  groundAcceleration: 400
-  airAcceleration: 400
+  groundAcceleration: 100
+  airAcceleration: 150
   groundLimit: 12
   airLimit: 15
-  gravity: 50
+  gravity: 40
   jumpHeight: 20
   slopeLimit: 20
   friction: 8
@@ -2549,6 +2549,7 @@ MonoBehaviour:
   jumpButton: Jump
   restartButton: Restart
   Text_VerticalSpeed: {fileID: 0}
+  gravityDuration: 0.2
 --- !u!95 &155379915
 Animator:
   serializedVersion: 5

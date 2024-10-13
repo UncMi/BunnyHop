@@ -58,7 +58,7 @@ namespace Psychonaut
 
         [Header("Noclip Settings")]
         [SerializeField] float noclipMoveSpeed = 100f;
-        
+
         [Header("Menu Settings")]
         [SerializeField] GameObject PauseMenu;
 
@@ -67,10 +67,6 @@ namespace Psychonaut
         private BoxCollider interactItemCollider;
         private IItemProperty interactItemProperty;
         private IInteractable interactItemInteractable;
-        
-        
-
-        
 
 
         private List<Collider> RagdollParts = new List<Collider>();
@@ -113,7 +109,7 @@ namespace Psychonaut
         [SerializeField] private float airLimit = 2f;
         [SerializeField] private float gravity = 36f;
         [SerializeField] private float jumpHeight = 16f;
-        [SerializeField] private float slopeLimit = 20f;
+        [SerializeField] private float slopeLimit = 45f;
         [SerializeField] private float friction = 6f;
         [SerializeField] private float trimpLimit = 5f;
         [SerializeField] private float groundDistance = 0.4f;
@@ -192,8 +188,6 @@ namespace Psychonaut
 
         }
 
-
-
         void Update()
         {
 
@@ -201,13 +195,12 @@ namespace Psychonaut
 
             HandleMovement();
             UpdateAnimator();
-            
+
 
             HandleRotationFixedPart();
             CheckPosition();
             LowerBodyStateMachine.Update();
             float verticalSpeed = rb.velocity.y;
-
 
         }
 
@@ -266,7 +259,6 @@ namespace Psychonaut
                 fallSpeed = 0f;
 
             rb.velocity = playerVelocity;
-            animator.SetFloat("Speed", playerVelocity.x);
             onGround = false;
             groundNormal = Vector3.zero;
         }
@@ -341,8 +333,8 @@ namespace Psychonaut
             float distanceFromTop = objectTopY - playerContactPoint.y;
 
             // Check if the player is near the edge of the object
-            bool isNearEdge = Mathf.Abs(playerContactPoint.x - objectCollider.bounds.max.x) < 0.5f ||
-                              Mathf.Abs(playerContactPoint.z - objectCollider.bounds.max.z) < 0.5f;
+            bool isNearEdge = Mathf.Abs(playerContactPoint.x - objectCollider.bounds.max.x) < 0.2f ||
+                              Mathf.Abs(playerContactPoint.z - objectCollider.bounds.max.z) < 0.2f;
 
             if (playerContactPoint.y <= playerCollider.bounds.min.y + 0.5f && isNearEdge)
             {
@@ -358,16 +350,29 @@ namespace Psychonaut
                 }
             }
         }
-
-        
-
-
+        float gravityTimer = 0f;
+        [SerializeField]float gravityDuration = 0.2f;
 
         void ApplyImmediateGravity()
         {
             if (!onGround || rb.velocity.y < 0)
             {
-                playerVelocity.y -= gravity * Time.deltaTime;
+                // Increment the gravity timer as long as it's below the duration
+                if (gravityTimer < gravityDuration)
+                {
+                    gravityTimer += Time.deltaTime;
+                }
+
+                // Calculate the gravity scale (0 to 1) over the gravityDuration time
+                float gravityScale = Mathf.Clamp01(gravityTimer / gravityDuration);
+
+                // Apply gravity, interpolating from 0 to max gravity
+                playerVelocity.y -= gravity * gravityScale * Time.deltaTime;
+            }
+            else
+            {
+                // Reset the gravity timer when on the ground
+                gravityTimer = 0f;
             }
         }
 
@@ -410,10 +415,9 @@ namespace Psychonaut
             }
         }
 
-
         void UpdateAnimator()
         {
-            animator.SetFloat(Speed, currentSpeed);
+            animator.SetFloat(Speed, rb.velocity.x);
             animator.SetFloat(JumpSpeed, rb.velocity.y);
         }
         public void HandleMovement()
@@ -433,8 +437,6 @@ namespace Psychonaut
             }
 
         }
-
-
 
         void HandleJump()
         {
