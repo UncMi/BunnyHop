@@ -12,7 +12,7 @@ namespace Psychonaut
         public bool IsGrounded { get; private set; }
         public float GroundDistance { get; private set; } = Mathf.Infinity;
 
-        void Update()
+        void FixedUpdate()
         {
             Debug.DrawRay(transform.position, Vector3.down * 10f, Color.red); // Extend the ray to make it more visible
             IsGrounded = Physics.CheckSphere(transform.position, groundDistance, groundLayers);

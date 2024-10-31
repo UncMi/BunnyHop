@@ -8,6 +8,9 @@ using System;
 using System.Collections;
 using TMPro;
 
+
+
+
 interface IInteractive
 {
     public void Interact();
@@ -15,6 +18,8 @@ interface IInteractive
 
 namespace Psychonaut
 {
+
+
     public class PlayerController : ValidatedMonoBehaviour
     {
         [Header("References")]
@@ -68,6 +73,8 @@ namespace Psychonaut
         private IItemProperty interactItemProperty;
         private IInteractable interactItemInteractable;
 
+        private float clipDistance;
+
 
         private List<Collider> RagdollParts = new List<Collider>();
 
@@ -97,7 +104,7 @@ namespace Psychonaut
         public Vector3 InputRot => _inputRot;
 
         private float fallSpeed = 0;
-        private float decayFactor = 0.3f;
+        private float decayFactor = 0.4f;
         private float fallSpeedBonus;
         private float maxFallSpeedBonus = 20;
 
@@ -113,8 +120,12 @@ namespace Psychonaut
         [SerializeField] private float friction = 6f;
         [SerializeField] private float trimpLimit = 5f;
         [SerializeField] private float groundDistance = 0.4f;
-        [SerializeField] private float clipDistance = 0.5f;
+        [SerializeField] private float minClipDistance = 0.4f;
+        [SerializeField] private float maxClipDistance = 2f;
+        [SerializeField] private float minVelocity = -20f;
+        [SerializeField] private float maxVelocity = -60f;
         [SerializeField] private float fallSpeedConversionRate = 0.2f;
+        [SerializeField] private float jumpTimer = 0.1f;
 
         [SerializeField]
         private string yAxisInput = "Vertical";
@@ -196,18 +207,23 @@ namespace Psychonaut
             HandleMovement();
             UpdateAnimator();
 
-
             HandleRotationFixedPart();
             CheckPosition();
             LowerBodyStateMachine.Update();
             float verticalSpeed = rb.velocity.y;
 
-        }
+            AdjustClipDistance();
+            AdjustJumpTimer();
 
+
+        }
+        RaycastHit hit_slope;
+        RaycastHit hit_slideUp;
+        private bool onSlide = false;
         void FixedUpdate()
         {
             //HandleCameraYMovement();
-
+            //CheckGroundType();
             playerVelocity = rb.velocity;
 
 
@@ -217,31 +233,27 @@ namespace Psychonaut
             }
             if (isJumpHeld && groundChecker.GetGroundDistance() <= groundDistance)
             {
-                RaycastHit hit;
-                if (Physics.Raycast(transform.position, Vector3.down, out hit, groundDistance + clipDistance, ~LayerMask.GetMask("Player")))
+                
+                if (Physics.Raycast(transform.position, Vector3.down, out hit_slope, groundDistance + clipDistance, ~LayerMask.GetMask("Player")))
                 {
-                    groundNormal = hit.normal;
-                    if (Vector3.Angle(hit.normal, Vector3.up) > slopeLimit)
+                    groundNormal = hit_slope.normal;
+                    if (Vector3.Angle(hit_slope.normal, Vector3.up) > slopeLimit)
                     {
                         onGround = false;
-                        ableToJump = false;
                     }
-                    else if (playerVelocity.y <= 0)
+                    else
                     {
                         onGround = true;
-                        ableToJump = true;
                     }
+
+
                 }
                 HandleJump();
             }
 
-            if (trimpLimit >= 0f && playerVelocity.y > trimpLimit)
-            {
-                onGround = false;
-            }
-
             if (onGround)
             {
+                Debug.Log(1);
                 inputDir = Vector3.Cross(Vector3.Cross(groundNormal, inputDir), groundNormal);
                 GroundAccelerate();
                 ApplyFriction();
@@ -249,6 +261,7 @@ namespace Psychonaut
 
             else
             {
+                Debug.Log(2);
                 AirAccelerate();
                 ApplyImmediateGravity();
             }
@@ -270,44 +283,20 @@ namespace Psychonaut
 
         private void OnCollisionStay(Collision other)
         {
-            ContactPoint[] contacts = other.contacts;
-            for (int i = 0; i < contacts.Length; i++)
-            {
-                ContactPoint contactPoint = contacts[i];
-
-                // Check if the surface is walkable (i.e., ground, not a wall)
-                if (contactPoint.normal.y > Mathf.Cos(slopeLimit * Mathf.Deg2Rad)) // Slope limit comparison
-                {
-                    groundNormal = contactPoint.normal;
-                    onGround = true;
-                    ableToJump = true;
-
-                    if (isJumpHeld)
-                    {
-                        HandleJump();
-                    }
-
-                    break;
-                }
-                else
-                {
-                    onGround = false;
-                    ableToJump = false;
-                    Vector3 horizontalVelocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-                    rb.velocity = new Vector3(horizontalVelocity.x, rb.velocity.y, horizontalVelocity.z);
-                }
-            }
-
+            
         }
 
         private void OnCollisionEnter(Collision collision)
         {
 
+            Debug.Log("AaAaaAaAaAaAaAaAaAaA");
             if (IsClimbableObject(collision))
             {
                 ClipToTopOfObject(collision);
             }
         }
+
+        
 
         // Check if the object height is less than or equal to 3f
         private bool IsClimbableObject(Collision collision)
@@ -333,8 +322,8 @@ namespace Psychonaut
             float distanceFromTop = objectTopY - playerContactPoint.y;
 
             // Check if the player is near the edge of the object
-            bool isNearEdge = Mathf.Abs(playerContactPoint.x - objectCollider.bounds.max.x) < 0.2f ||
-                              Mathf.Abs(playerContactPoint.z - objectCollider.bounds.max.z) < 0.2f;
+            bool isNearEdge = Mathf.Abs(playerContactPoint.x - objectCollider.bounds.max.x) < 0.5f ||
+                              Mathf.Abs(playerContactPoint.z - objectCollider.bounds.max.z) < 0.5f;
 
             if (playerContactPoint.y <= playerCollider.bounds.min.y + 0.5f && isNearEdge)
             {
@@ -401,6 +390,7 @@ namespace Psychonaut
 
         private void AirAccelerate()
         {
+
             Vector3 lhs = playerVelocity;
             lhs.y = 0f;
             float num = airLimit - Vector3.Dot(lhs, inputDir);
@@ -417,7 +407,7 @@ namespace Psychonaut
 
         void UpdateAnimator()
         {
-            animator.SetFloat(Speed, rb.velocity.x);
+            animator.SetFloat(Speed, Math.Abs(playerVelocity.x));
             animator.SetFloat(JumpSpeed, rb.velocity.y);
         }
         public void HandleMovement()
@@ -440,11 +430,12 @@ namespace Psychonaut
 
         void HandleJump()
         {
-            if (ableToJump)
+            if (ableToJump && onGround)
             {
+                // Prevent a second jump when falling from high
                 if (playerVelocity.y < 0f)
                 {
-                    playerVelocity.y = 0f; // Preserve horizontal momentum
+                    playerVelocity.y = 0f; // Reset vertical velocity before jumping
                 }
 
                 fallSpeedBonus = Mathf.Clamp(fallSpeedBonus * decayFactor, 0, maxFallSpeedBonus);
@@ -452,7 +443,6 @@ namespace Psychonaut
                 playerVelocity.y += jumpHeight + fallSpeedBonus;
 
                 onGround = false;
-
                 StartCoroutine(JumpTimer());
             }
         }
@@ -473,32 +463,53 @@ namespace Psychonaut
         {
             if (cameraForward != Vector3.zero)
             {
-                // Calculate the new rotation based on the camera's forward vector
                 Quaternion newRotation = Quaternion.LookRotation(cameraForward);
 
-                // Rotate the player smoothly
                 rb.MoveRotation(Quaternion.Slerp(rb.rotation, newRotation, rotationSpeed * Time.deltaTime));
 
-                // Get the current velocity
                 Vector3 currentVelocity = rb.velocity;
+                float verticalVelocity = currentVelocity.y;  
 
-                // Preserve vertical velocity (y-axis) and only adjust horizontal velocity
-                float verticalVelocity = currentVelocity.y;  // Store the vertical velocity
-
-                // Calculate new horizontal velocity direction based on the character's forward direction
                 Vector3 horizontalVelocity = rb.transform.forward * new Vector3(currentVelocity.x, 0f, currentVelocity.z).magnitude;
 
-                // Apply the horizontal velocity and keep the vertical velocity intact
                 rb.velocity = new Vector3(horizontalVelocity.x, verticalVelocity, horizontalVelocity.z);
             }
         }
 
+        void AdjustClipDistance(Vector3 hitSlopeNormal)
+        {
+            // Calculate the base clip distance based on the player's vertical velocity.
+            if (playerVelocity.y >= minVelocity)
+            {
+                clipDistance = minClipDistance;
+            }
+            else if (playerVelocity.y <= maxVelocity)
+            {
+                clipDistance = maxClipDistance;
+            }
+            else
+            {
+                float t = Mathf.InverseLerp(maxVelocity, minVelocity, playerVelocity.y);
+                clipDistance = Mathf.Lerp(maxClipDistance, minClipDistance, t);
+            }
 
+            // Adjust clip distance based on the angle of the ground.
+            float slopeAngle = Vector3.Angle(hitSlopeNormal, Vector3.up);
+            float angleT = Mathf.InverseLerp(10f, 0f, slopeAngle); // Adjusts within the angle range (10 degrees or less).
+            clipDistance = Mathf.Lerp(clipDistance, minClipDistance, angleT);
+        }
+        void AdjustJumpTimer()
+        {
+            float t = Mathf.InverseLerp(10, 0, Vector3.Angle(hit_slope.normal, Vector3.up));
+            jumpTimer = Mathf.Lerp(0f, 0.1f, t);
+            Debug.Log(jumpTimer);
+        }
 
+        
         private IEnumerator JumpTimer()
         {
             ableToJump = false;
-            yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(jumpTimer);
             ableToJump = true;
         }
 
@@ -532,5 +543,40 @@ namespace Psychonaut
 
 
     }
+
 }
 
+
+
+/*
+ * oncollisionenter
+ * ContactPoint[] contacts = collision.contacts;
+            for (int i = 0; i < contacts.Length; i++)
+            {
+                ContactPoint contactPoint = contacts[i];
+
+                // Check if the surface is walkable (i.e., ground, not a wall)
+                if (contactPoint.normal.y > Mathf.Cos(slopeLimit * Mathf.Deg2Rad)) // Slope limit comparison
+                {
+                    groundNormal = contactPoint.normal;
+                    onGround = true;
+                    ableToJump = true;
+
+
+                    if (isJumpHeld)
+                    {
+                        HandleJump();
+                    }
+
+                    break;
+                }
+                else
+                {
+                    onGround = false;
+                    ableToJump = false;
+                    Vector3 horizontalVelocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+                    rb.velocity = new Vector3(horizontalVelocity.x, rb.velocity.y, horizontalVelocity.z);
+                }
+            }
+
+*/

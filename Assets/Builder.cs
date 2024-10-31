@@ -20,8 +20,8 @@ namespace Psychonaut
         private Camera mainCamera;
 
         [Header("Noclip Settings")]
-        [SerializeField] float noclipMoveSpeed = 100f;
-        [SerializeField] float sprintMoveSpeed = 10f;  // Sprint speed
+        [SerializeField] float noclipMoveSpeed = 200f;
+        [SerializeField] float sprintMoveSpeed = 800f;  // Sprint speed
         [SerializeField] string noclipButton = "Noclip";
         [SerializeField] private string sprintButton = "Sprint"; // Sprint input
         [SerializeField] private string yAxisInput = "Vertical";
@@ -59,7 +59,7 @@ namespace Psychonaut
                 }
                 else
                 {
-                    noclipMoveSpeed = 100f;  // Reset to normal speed
+                    noclipMoveSpeed = noclipMoveSpeed;  // Reset to normal speed
                 }
             }
         }
